@@ -24,7 +24,7 @@ model_name = "bunny_white"
 models[model_name] = {}
 models[model_name]["path"] = "./data/bunny"
 models[model_name]["mesh"] = "./data/bunny/bunny1ww.obj"
-models[model_name]["texture"] = "./data/bunny/texture/bunny1ww.jpg"
+models[model_name]["texture"] = "./data/bunny/texture/bunny1ww-logo.jpg"
 models[model_name]["scanner_pos"] = np.array([-0.85,-0.85,0.80])
 models[model_name]["cam"] = dict(pos=(-1.965, -1.268, 0.8360),
            focalPoint=(-0.001, 0.087, 0.427),

@@ -477,19 +477,19 @@ if __name__ == "__main__":
     interactive=False
     # sc=Scanner(alpha=15)
     # sc=Scanner(alpha=60,n=100)
-    sc=Scanner(model="airplane",steps=360)
+    sc=Scanner(model="bunny",steps=360)
 
-    # sc.scan(n_rays=100)
-    # sc.scanVisualize(interactive=interactive,size=size,texture=True)
+    sc.scan(n_rays=100)
+    sc.scanVisualize(interactive=interactive,size=size,texture=True)
 
-    sc.scanMVS(n_points=4000)
-    sc.scanVisualizeMVS(interactive=interactive,texture=False)
+    # sc.scanMVS(n_points=4000)
+    # sc.scanVisualizeMVS(interactive=interactive,texture=False)
 
     # sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
     # sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
 
     # sc.pcVisualize(interactive=False,size=size,with_mesh=True)
-    sc.pcVisualize(with_mesh=False,type="mvs")
+    # sc.pcVisualize(with_mesh=False,type="mvs")
 
     # sc.gtVisualize(interactive=interactive,size=size,lw=0.0,texture=False)
     # sc.gtVisualize(interactive=interactive,size=size,lw=0.0,texture=True)
