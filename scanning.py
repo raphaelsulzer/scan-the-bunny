@@ -18,45 +18,34 @@ vedo.settings.useDepthPeeling = True
 
 
 class Scanner:
-    def __init__(self, model="bunny", steps=30, n_rays=10):
+    def __init__(self, model="bunny", steps=30):
 
         """
+        :param model: model to scan
         :param steps: scanner steps around z-axis
-        :param n_rays: number of rays to shoot for one scanner step
         """
 
         self.model = models[model]
+        self.steps=steps
+        self.factor = 360/steps
 
-        # self.model = "anchor_1.off"
-        # self.model = "croissant_4k.obj"
-        # self.model = "elephant1.obj"
-        # self.model = "bunny1.obj"
-        # self.model = "bunny1ww.obj"
-        # self.model = "bunny31.obj"
-        # self.model = "bunny41.obj"
-        # self.model = "bunny21.obj"
-        # self.model = "mesh0.ply"
+    def scan(self, n_rays=10):
+        
+        """
+        :param n_rays: number of rays to shoot for one scanner step
+        """
 
-        self.origin = np.tile(self.model["scanner_pos"],(n_rays,1))
+        # good video to see how triangulation based range scanner works: https://www.micro-epsilon.de/2D_3D/laser-scanner/
+        print("Scanning")
+
+        origin = np.tile(self.model["scanner_pos"],(n_rays,1))
 
         # dest = np.expand_dims(np.linspace(-0.5,1.5,num=n),axis=1)
         dest = np.expand_dims(np.linspace(-0.8,1.2,num=n_rays),axis=1)
         z = np.zeros(shape=(n_rays,2))
         z+=[0.0,0.0]
-        self.dest = np.concatenate([z,dest],axis=1)
+        dest = np.concatenate([z,dest],axis=1)
 
-        self.steps=steps
-        self.factor = 360/steps
-
-    def scan(self):
-
-        # good video to see how triangulation based range scanner works: https://www.micro-epsilon.de/2D_3D/laser-scanner/
-
-
-        print("Scanning")
-
-        origin=self.origin
-        dest=self.dest
         self.mesh = trimesh.load(self.model["mesh"],use_embree=False,force="mesh")
 
         # self.mesh = list(mesh.geometry.items())[0][1]
@@ -91,23 +80,22 @@ class Scanner:
         o3d.io.write_point_cloud(os.path.join(self.model["path"],"pointcloud.ply"),pcd)
         np.savez(os.path.join(self.model["path"],"pointcloud.npz"),points=points,sensor_position=spos)
 
-    def scanMVS(self,n_cam=3,n_points=18000):
+    def scanMVS(self,n_points=5000):
+
+        n_cam = self.model["mvs_pos"].shape[0]
 
         print("Scanning MVS")
 
-        mesh = trimesh.load_mesh(os.path.join(self.path,self.model),use_embree=False)
-        # self.mesh = list(mesh.geometry.items())[0][1]
-        self.mesh = mesh
+        self.mesh = trimesh.load(self.model["mesh"],use_embree=False,force="mesh")
         points = np.empty(shape=(0,3))
         spos = np.empty(shape=(0,3))
 
         # cameras = np.array([[0,2,1.2],[-2,0,1],[2.5,1,1.2],[-3,-3,1.8]])
         # cameras = np.array([[-2,1,1],[2.5,1,1.2],[-1,-3,1.8]])
-        cameras = np.array([[-0.7,0.4,0.2],[1.2,0.2,0.4],[-0.5,-1.0,0.5]])
 
-        for c in tqdm(cameras):
+        for c in tqdm(self.model["mvs_pos"]):
 
-            dest = np.random.uniform(low=mesh.bounds[0,:],high=mesh.bounds[1,:],size=(int(n_points/n_cam),3))
+            dest = np.random.uniform(low=self.mesh.bounds[0,:],high=self.mesh.bounds[1,:],size=(int(n_points/n_cam),3))
             origin = np.tile(c,(int(n_points/n_cam),1))
 
             # Get the intersections
@@ -124,8 +112,8 @@ class Scanner:
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(points)
         pcd.normals = o3d.utility.Vector3dVector(spos-points)
-        o3d.io.write_point_cloud(os.path.join(self.path,"pointcloud_mvs.ply"),pcd)
-        np.savez(os.path.join(self.path,"pointcloud_mvs.npz"),points=points,sensor_position=spos)
+        o3d.io.write_point_cloud(os.path.join(self.model["path"],"pointcloud_mvs.ply"),pcd)
+        np.savez(os.path.join(self.model["path"],"pointcloud_mvs.npz"),points=points,sensor_position=spos)
 
     def setCamera(self,plt):
 
@@ -136,12 +124,12 @@ class Scanner:
         plt.camera.SetClippingRange(self.model["cam"]["clippingRange"])
 
 
-    def scanVisualizeMVS(self,interactive=True,size=(600,600),texture=True):
+    def scanVisualizeMVS(self,interactive=False,size=(500,500),texture=True,duration=80):
         print("visualize MVS Scanning")
 
-        mesh = vedo.Mesh(os.path.join(self.path, self.model), c=[90, 90, 90])
+        mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
         if texture:
-            mesh.texture(os.path.join(self.path, "0", "DefaultMaterial_baseColor.jpg"))
+            mesh.texture(self.model["texture"])
             brightness = 1.5
         else:
             mesh=mesh.computeNormals().phong()
@@ -151,11 +139,12 @@ class Scanner:
 
         points = vedo.Points(self.points,c=[255,255,0],r=10)
         sensors = vedo.Points(self.spos, c=[255, 165, 0], r=20)
-        origin = vedo.Point(self.origin[0])
+        origin = vedo.Point(self.model["scanner_pos"])
 
         # [default, metallic, plastic, shiny, glossy, ambient, off]
 
-        os.makedirs(os.path.join(self.path, "mvs"), exist_ok=True)
+        os.makedirs(os.path.join(self.model["path"], "mvs"), exist_ok=True)
+        images=[]
         for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
@@ -181,11 +170,16 @@ class Scanner:
             plt.show(interactive=interactive, size=size,axes=0,roll=0,
                      azimuth=-i*self.factor,resetcam=False)
 
-            vedo.io.screenshot(os.path.join(self.path, "mvs", "img{:03d}.png".format(i)))
+            img="img{:03d}.png".format(i)
+            vedo.io.screenshot(os.path.join(self.model["path"], "mvs", img))
             plt.close()
+            images.append(Image.open(os.path.join(self.model["path"], "mvs", img)))
+
+        images[0].save(os.path.join(self.model["path"], "scan_mvs.gif"),
+                       save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
 
-    def scanVisualize(self,interactive=True,size=(600,600),texture=True):
+    def scanVisualize(self,interactive=False,size=(500,500),texture=True,duration=80):
         print("visualize Scanning")
 
         mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
@@ -200,8 +194,9 @@ class Scanner:
 
         # [default, metallic, plastic, shiny, glossy, ambient, off]
 
-        os.makedirs(os.path.join(self.model["path"], "img"), exist_ok=True)
+        os.makedirs(os.path.join(self.model["path"], "scn"), exist_ok=True)
         scanlines=[]
+        images=[]
         for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
@@ -240,12 +235,17 @@ class Scanner:
             plt.show(interactive=interactive, size=size,axes=0,roll=0,
                      azimuth=-i*self.factor,resetcam=False)
 
-            vedo.io.screenshot(os.path.join(self.model["path"], "img", "img{:03d}.png".format(i)))
+            img="img{:03d}.png".format(i)
+            vedo.io.screenshot(os.path.join(self.model["path"], "scn", img))
             plt.close()
+            images.append(Image.open(os.path.join(self.model["path"], "scn", img)))
+
+        images[0].save(os.path.join(self.model["path"], "scan.gif"),
+                       save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
 
 
-    def pointsVisualize(self,interactive=True,size=(900,600),with_mesh=False,duration=80):
+    def pointsVisualize(self,interactive=False,size=(500,500),with_mesh=False,duration=80):
         print("visualize Points")
 
         points = np.empty(shape=(0,3))
@@ -285,19 +285,15 @@ class Scanner:
             self.setCamera(plt)
             plt.show(interactive=interactive, size=size,axes=0,roll=0,
                      azimuth=-i*self.factor,resetcam=False)
-            vedo.io.screenshot(os.path.join(self.model["path"], name, "img{:03d}.png".format(i)))
+            img = "img{:03d}.png".format(i)
+            vedo.io.screenshot(os.path.join(self.model["path"], name, img))
+            images.append(Image.open(os.path.join(self.model["path"], name, img)))
             plt.close()
 
-        for img in sorted(os.listdir(os.path.join(self.model["path"], name))):
-            im=Image.open(os.path.join(self.model["path"], name, img))
-            # im.show()
-            # im=ImageOps.crop(im,(80,70,0,100))
-            # im.show()
-            images.append(im)
         images[0].save(os.path.join(self.model["path"], name+".gif"),
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
-    def scanGIF(self,duration=0.1):
+    def GIF(self,duration=0.1):
         print("\nMake GIFs\n")
         images = []
         for img in sorted(os.listdir(os.path.join(self.model["path"], "img"))):
@@ -309,7 +305,7 @@ class Scanner:
             images.append(imageio.imread(os.path.join(self.model["path"],"pts", img)))
         imageio.mimsave(os.path.join(self.model["path"],"points.gif"), images, duration=duration)
 
-    def scanGIF_PIL(self,duration=80):
+    def GIF_PIL(self,duration=80):
         from PIL import Image, ImageOps
 
         print("\nMake GIFs\n")
@@ -325,22 +321,18 @@ class Scanner:
 
         images = []
         for img in sorted(os.listdir(os.path.join(self.model["path"], "pts"))):
-            im=Image.open(os.path.join(self.model["path"], "pts", img))
-            # im.show()
-            # im=ImageOps.crop(im,(80,70,0,100))
-            # im.show()
-            images.append(im)
+            images.append(Image.open(os.path.join(self.model["path"], "pts", img)))
         images[0].save(os.path.join(self.model["path"], "points.gif"),
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
 
-    def gtVisualize(self,interactive=True,size=(600,600),lw=0.0,texture=False,duration=80):
+    def gtVisualize(self,interactive=False,size=(500,500),lw=0.0,texture=False,duration=80):
 
         print("visualize Mesh")
 
         images = []
         name = "gt"
-        sensor = self.origin[0]
+        sensor = self.model["scanner_pos"]
         mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
 
         if lw > 0.0:
@@ -380,13 +372,13 @@ class Scanner:
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
         # imageio.mimsave(os.path.join(self.model["path"],"points.gif"), images, duration=duration)
 
-    def meshVisualize(self,interactive=True,size=(600,600),lw=0.0,texture=False,duration=80):
+    def meshVisualize(self,interactive=False,size=(500,500),lw=0.0,texture=False,duration=80):
 
         print("visualize Mesh")
 
         images = []
         name = "mesh"
-        sensor = self.origin[0]
+        sensor = self.model["scanner_pos"]
         mesh = vedo.Mesh(os.path.join(self.model["path"], "pointcloud_rt_5.0.ply"), c=[90, 90, 90])
         mesh.computeNormals().phong()
 
@@ -425,13 +417,13 @@ class Scanner:
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
         imageio.mimsave(os.path.join(self.model["path"],"points.gif"), images, duration=duration)
 
-    def pcVisualize(self,interactive=True,size=(600,600),with_mesh=False,duration=80):
+    def pcVisualize(self,interactive=False,size=(500,500),with_mesh=False,type="range",duration=80):
 
         print("visualize Pointcloud")
 
         images = []
         # sensor = np.array([-0.85,-0.85,0.80])
-        sensor = self.origin[0]
+        sensor = self.model["scanner_pos"]
 
         if with_mesh:
             mesht = vedo.Mesh(os.path.join(self.model["path"], self.model))
@@ -439,7 +431,11 @@ class Scanner:
             mesht.texture(self.model["texture"])
             mesht.lighting("default")
 
-        pc = vedo.load(os.path.join(self.model["path"], "pointcloud.ply"))
+        if type == "mvs":
+            pc = vedo.load(os.path.join(self.model["path"], "pointcloud_mvs.ply"))
+        else:
+            pc = vedo.load(os.path.join(self.model["path"], "pointcloud.ply"))
+
         pc = vedo.Points(pc, c=[93, 169, 227], r=6).lighting("default")
         pc.computeNormalsWithPCA()
 
@@ -481,19 +477,19 @@ if __name__ == "__main__":
     interactive=False
     # sc=Scanner(alpha=15)
     # sc=Scanner(alpha=60,n=100)
-    sc=Scanner(model="bunny",steps=360,n_rays=100)
+    sc=Scanner(model="airplane",steps=360)
 
-    sc.scan()
-    sc.scanVisualize(interactive=interactive,texture=True)
+    # sc.scan(n_rays=100)
+    # sc.scanVisualize(interactive=interactive,size=size,texture=True)
 
-    # sc.scanMVS(n_points=4000)
-    # sc.scanVisualizeMVS(interactive=interactive,texture=False)
+    sc.scanMVS(n_points=4000)
+    sc.scanVisualizeMVS(interactive=interactive,texture=False)
 
-    sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
-    sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
+    # sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
+    # sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
 
     # sc.pcVisualize(interactive=False,size=size,with_mesh=True)
-    # sc.pcVisualize(interactive=interactive,size=size,with_mesh=False)
+    sc.pcVisualize(with_mesh=False,type="mvs")
 
     # sc.gtVisualize(interactive=interactive,size=size,lw=0.0,texture=False)
     # sc.gtVisualize(interactive=interactive,size=size,lw=0.0,texture=True)
