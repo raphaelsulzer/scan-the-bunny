@@ -1,0 +1,22 @@
+# Blender 3.3.0 MTL File: 'Rabbit.blend'
+# www.blender.org
+
+newmtl Material
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd /home/adminlocal/Downloads/rabbit (3)/source/Rabbit Deffuse.png
+map_Ns /home/adminlocal/Downloads/rabbit (3)/source/Rabbit Roughness.png
+
+newmtl Material.001
+Ns 714.793457
+Ka 0.763636 0.763636 0.763636
+Kd 0.000000 0.000000 0.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
