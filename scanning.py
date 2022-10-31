@@ -18,11 +18,11 @@ vedo.settings.useDepthPeeling = True
 
 
 class Scanner:
-    def __init__(self, model="bunny", alpha=30, n=10):
+    def __init__(self, model="bunny", steps=30, n_rays=10):
 
         """
-        :param alpha: angle in degree for one scanner step around z-axis
-        :param n: number of rays to shoot for one scanner step
+        :param steps: scanner steps around z-axis
+        :param n_rays: number of rays to shoot for one scanner step
         """
 
         self.model = models[model]
@@ -37,17 +37,16 @@ class Scanner:
         # self.model = "bunny21.obj"
         # self.model = "mesh0.ply"
 
-        self.origin = np.tile(self.model["scanner_pos"],(n,1))
+        self.origin = np.tile(self.model["scanner_pos"],(n_rays,1))
 
         # dest = np.expand_dims(np.linspace(-0.5,1.5,num=n),axis=1)
-        dest = np.expand_dims(np.linspace(-0.8,1.2,num=n),axis=1)
-        z = np.zeros(shape=(n,2))
+        dest = np.expand_dims(np.linspace(-0.8,1.2,num=n_rays),axis=1)
+        z = np.zeros(shape=(n_rays,2))
         z+=[0.0,0.0]
         self.dest = np.concatenate([z,dest],axis=1)
 
-        self.alpha=alpha
-        self.factor = 360/alpha
-        self.n = n
+        self.steps=steps
+        self.factor = 360/steps
 
     def scan(self):
 
@@ -66,13 +65,13 @@ class Scanner:
         self.pointsArray = []
         self.sensorsArray = []
 
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             # Ry = trimesh.transformations.rotation_matrix(i*3.1415/180, [1, 0, 0])
             # R=trimesh.transformations.concatenate_matrices(Ry, Rz)
             origin = np.matmul(origin,R[:3,:3])
-            dest+=[0,0.3/self.alpha,0]
+            dest+=[0,0.3/self.steps,0]
             dest = np.matmul(dest,R[:3,:3])
 
             # Get the intersections
@@ -157,7 +156,7 @@ class Scanner:
         # [default, metallic, plastic, shiny, glossy, ambient, off]
 
         os.makedirs(os.path.join(self.path, "mvs"), exist_ok=True)
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             mesh.applyTransform(R)
@@ -203,7 +202,7 @@ class Scanner:
 
         os.makedirs(os.path.join(self.model["path"], "img"), exist_ok=True)
         scanlines=[]
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             mesh.applyTransform(R)
@@ -260,7 +259,7 @@ class Scanner:
         name = "pts_mesh" if with_mesh else "pts"
         images = []
         os.makedirs(os.path.join(self.model["path"], name), exist_ok=True)
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             mesh.applyTransform(R)
 
@@ -358,7 +357,7 @@ class Scanner:
             # mesh=mesh.computeNormals().phong()
 
         os.makedirs(os.path.join(self.model["path"], "gt"), exist_ok=True)
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             mesh.applyTransform(R)
@@ -402,7 +401,7 @@ class Scanner:
 
 
         os.makedirs(self.model["mesh"], exist_ok=True)
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
             vedo.settings.useDepthPeeling = True
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
@@ -447,7 +446,7 @@ class Scanner:
         name = "pc_mesh" if with_mesh else "pc"
 
         os.makedirs(os.path.join(self.model["path"], name), exist_ok=True)
-        for i in tqdm(range(self.alpha)):
+        for i in tqdm(range(self.steps)):
             vedo.settings.useDepthPeeling = True
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
@@ -479,19 +478,19 @@ class Scanner:
 if __name__ == "__main__":
 
     size=(500,500)
-    interactive=True
+    interactive=False
     # sc=Scanner(alpha=15)
     # sc=Scanner(alpha=60,n=100)
-    sc=Scanner(alpha=15,n=100)
+    sc=Scanner(model="bunny",steps=360,n_rays=100)
 
     sc.scan()
-    sc.scanVisualize(interactive=interactive,texture=False)
+    sc.scanVisualize(interactive=interactive,texture=True)
 
     # sc.scanMVS(n_points=4000)
     # sc.scanVisualizeMVS(interactive=interactive,texture=False)
 
-    # sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
-    # sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
+    sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
+    sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
 
     # sc.pcVisualize(interactive=False,size=size,with_mesh=True)
     # sc.pcVisualize(interactive=interactive,size=size,with_mesh=False)
@@ -500,18 +499,3 @@ if __name__ == "__main__":
     # sc.gtVisualize(interactive=interactive,size=size,lw=0.0,texture=True)
     # sc.meshVisualize(interactive=interactive,size=size,lw=0.0,texture=False)
     # sc.meshVisualize(interactive=interactive,size=size,lw=0.15)
-
-
-
-
-
-
-
-
-
-
-
-# turn it around z axis
-
-
-# put a scanner

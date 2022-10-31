@@ -8,24 +8,37 @@ import numpy as np
 
 models = {}
 
-models["bunny"] = {}
-models["bunny"]["path"] = "./data/bunny"
-models["bunny"]["mesh"] = "./data/bunny/bunny1.obj"
-models["bunny"]["texture"] = "./data/bunny/0/DefaultMaterial_baseColor.jpg"
-models["bunny"]["scanner_pos"] = np.array([-0.85,-0.85,0.80])
-models["bunny"]["cam"] = dict(pos=(-1.965, -1.268, 0.8360),
+model_name="bunny"
+models[model_name] = {}
+models[model_name]["path"] = "./data/bunny"
+models[model_name]["mesh"] = "./data/bunny/bunny1.obj"
+models[model_name]["texture"] = "./data/bunny/0/DefaultMaterial_baseColor.jpg"
+models[model_name]["scanner_pos"] = np.array([-0.85,-0.85,0.80])
+models[model_name]["cam"] = dict(pos=(-1.965, -1.268, 0.8360),
            focalPoint=(-0.001, 0.087, 0.427),
            viewup=(0, 0, 1.000),
            distance=2.420,
            clippingRange=(0.314, 4.512))
 
+model_name = "bunny_white"
+models[model_name] = {}
+models[model_name]["path"] = "./data/bunny"
+models[model_name]["mesh"] = "./data/bunny/bunny1ww.obj"
+models[model_name]["texture"] = "./data/bunny/bunny1ww.jpg"
+models[model_name]["scanner_pos"] = np.array([-0.85,-0.85,0.80])
+models[model_name]["cam"] = dict(pos=(-1.965, -1.268, 0.8360),
+           focalPoint=(-0.001, 0.087, 0.427),
+           viewup=(0, 0, 1.000),
+           distance=2.420,
+           clippingRange=(0.314, 4.512))
 
-models["airplane"] = {}
-models["bunny"]["path"] = "./data/airplane"
-models["airplane"]["mesh"] = "./data/airplane/mesh0.ply"
-models["airplane"]["texture"] = None
-models["airplane"]["scanner_pos"] = np.array([-0.65,-0.65,0.20])
-models["airplane"]["cam"] = dict(pos=(-1.965, -1.268, 0.8360),
+model_name = "airplane"
+models[model_name] = {}
+models[model_name]["path"] = "./data/airplane"
+models[model_name]["mesh"] = "./data/airplane/mesh0.ply"
+models[model_name]["texture"] = "./data/bunny/0/DefaultMaterial_baseColor.jpg"
+models[model_name]["scanner_pos"] = np.array([-0.85,-0.85,0.80])
+models[model_name]["cam"] = dict(pos=(-1.965, -1.268, 0.8360),
            focalPoint=(-0.001, 0.087, 0.427),
            viewup=(0, 0, 1.000),
            distance=2.420,
