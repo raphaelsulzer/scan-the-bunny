@@ -18,5 +18,5 @@ Ks 1.000000 1.000000 1.000000
 Tr 1.000000
 illum 2
 Ns 0.000000
-map_Kd /home/adminlocal/Downloads/Stanford_Bunny_PBR/0/DefaultMaterial_baseColor.jpg
+map_Kd ./0/DefaultMaterial_baseColor.jpg
 
