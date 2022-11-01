@@ -1,12 +1,7 @@
 import vedo
-from vedo import Plotter, Picture, dataurl
 import numpy as np
-import glob
-import os, sys
-import random
-import vtk
-from scipy.spatial.transform import Rotation
-import trimesh, io
+import os
+import trimesh
 from PIL import Image
 import open3d as o3d
 import math
@@ -15,7 +10,6 @@ from tqdm import tqdm
 from data import models
 
 vedo.settings.useDepthPeeling = True
-
 
 class Scanner:
     def __init__(self, model="bunny", steps=30):
