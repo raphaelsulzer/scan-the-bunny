@@ -1,7 +1,7 @@
 # Virtual Scanning Simulations in Python
 
 This repository contains code and sample data for creating virtual scanning simulations like the ones below.
-Although the code produces point clouds with realistic characteristics such as non-uniformity and missing data from self-occlusions, it is mainly meant for visualising the scanning process.
+The code produces point clouds with realistic characteristics such as non-uniformity and missing data from self-occlusions. However, it is mainly meant for visualising the scanning process.
 
 ## Range scanning simulation
 
