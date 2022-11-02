@@ -13,8 +13,8 @@ sc.pointsVisualize(with_mesh=True)
 ```
 
 <p float="left">
-  <img style="width:250px;" src="./data/bunny/scan.gif">
-  <img style="width:250px;" src="./data/bunny/pts_mesh.gif">
+  <img style="width:400px;" src="./data/bunny/scan.gif">
+  <img style="width:400px;" src="./data/bunny/pts_mesh.gif">
 </p>
 
 
@@ -28,7 +28,33 @@ sc.pcVisualize(with_mesh=False,type="mvs")
 ```
 
 <p float="left">
-  <img style="width:250px;" src="./data/airplane/scan_mvs.gif">
-  <img style="width:250px;" src="./data/airplane/pc.gif">
+  <img style="width:400px;" src="./data/airplane/scan_mvs.gif">
+  <img style="width:400px;" src="./data/airplane/pc.gif">
 </p>
+
+
+## Real scanning
+
+You can find example code for MVS and LiDAR scanning visualisation of the ETH3D dataset [in this repository](https://github.com/raphaelsulzer/eth3d).
+
+<p float="left">
+  <img style="width:400px;" src="https://github.com/raphaelsulzer/eth3d/blob/master/out/terrace_lidar.png?raw=true">
+  <img style="width:400px;" src="https://github.com/raphaelsulzer/eth3d/blob/master/out/terrace_mvs.png?raw=true">
+</p>
+
+
+<p float="left">
+  <img style="width:400px;" src="https://github.com/raphaelsulzer/eth3d/blob/master/out/terrace_lidar_sensor.png?raw=true">
+  <img style="width:400px;" src="https://github.com/raphaelsulzer/eth3d/blob/master/out/terrace_mvs_sensor.png?raw=true">
+</p>
+
+
+<p float="left">
+  <img style="width:400px;" src="https://github.com/raphaelsulzer/eth3d/blob/master/out/terrace_lidar_mesh.png?raw=true">
+  <img style="width:400px;" src="https://github.com/raphaelsulzer/eth3d/blob/master/out/terrace_mvs_mesh.png?raw=true">
+</p>
+
+
+
+
 
