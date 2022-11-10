@@ -9,7 +9,9 @@ import imageio
 from tqdm import tqdm
 from data import models
 
-vedo.settings.useDepthPeeling = True
+# vedo.settings.useDepthPeeling = True
+vedo.settings.use_depth_peeling = True
+# if there is an error with libGL, apply this fix to the conda scan environment: https://stackoverflow.com/a/72427700
 
 class Scanner:
     def __init__(self, model="bunny", steps=30):
@@ -142,11 +144,11 @@ class Scanner:
         for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
-            mesh.applyTransform(R)
+            mesh.apply_transform(R)
 
-            points.applyTransform(R)
+            points.apply_transform(R)
 
-            sensors.applyTransform(R)
+            sensors.apply_transform(R)
 
             rays = vedo.shapes.Lines(points,sensors,c='y',lw=1,res=24,alpha=0.4)
 
@@ -157,7 +159,7 @@ class Scanner:
             plt += sensors
             # lp=vedo.Points(sensors.points()[0],c='g',r=15.0)
             # lp=vedo.Point((-0.3,-0.3,0.8),c='g',r=15.0)
-            origin.applyTransform(R)
+            origin.apply_transform(R)
             plt+= vedo.Light(origin, c='w', intensity=brightness)
 
             self.setCamera(plt)
@@ -194,14 +196,14 @@ class Scanner:
         for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
-            mesh.applyTransform(R)
+            mesh.apply_transform(R)
 
             scanline = vedo.Points(self.pointsArray[i],c=[255,255,0],r=10)
-            scanline.applyTransform(R)
+            scanline.apply_transform(R)
             scanlines.append(scanline)
 
             sensors = vedo.Points(self.sensorsArray[i],c=[255,165,0],r=20)
-            sensors.applyTransform(R)
+            sensors.apply_transform(R)
 
             rays = vedo.shapes.Lines(scanline,sensors,c='y',lw=4,res=24,alpha=0.6)
 
@@ -255,10 +257,10 @@ class Scanner:
         os.makedirs(os.path.join(self.model["path"], name), exist_ok=True)
         for i in tqdm(range(self.steps)):
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
-            mesh.applyTransform(R)
+            mesh.apply_transform(R)
 
             sensors = vedo.Points(self.sensorsArray[i],c=[255,165,0],r=20)
-            sensors.applyTransform(R)
+            sensors.apply_transform(R)
 
             # pointcloud
             # iteratively extent the point cloud for 2nd visualisation
@@ -269,7 +271,7 @@ class Scanner:
             # [default, metallic, plastic, shiny, glossy, ambient, off]
             pc.computeNormalsWithPCA()
             pc.pointdata["Normals"]=normals
-            pc.applyTransform(R)
+            pc.apply_transform(R)
 
             plt = vedo.Plotter(axes=1, offscreen=np.invert(interactive))
             plt+= vedo.Light(sensors.points()[0], c='w', intensity=1.5)
@@ -346,7 +348,7 @@ class Scanner:
         for i in tqdm(range(self.steps)):
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
-            mesh.applyTransform(R)
+            mesh.apply_transform(R)
             sensor=sensor@R[:3,:3]
 
             plt = vedo.Plotter(axes=0, offscreen=np.invert(interactive))
@@ -391,7 +393,7 @@ class Scanner:
             vedo.settings.useDepthPeeling = True
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
-            mesh.applyTransform(R)
+            mesh.apply_transform(R)
             sensor=sensor@R[:3,:3]
 
             plt = vedo.Plotter(axes=0, offscreen=np.invert(interactive))
@@ -441,8 +443,8 @@ class Scanner:
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             if with_mesh:
-                mesht.applyTransform(R)
-            pc.applyTransform(R)
+                mesht.apply_transform(R)
+            pc.apply_transform(R)
             sensor=sensor@R[:3,:3]
 
             # pointcloud
