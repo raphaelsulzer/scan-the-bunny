@@ -1,8 +1,8 @@
 *.jpg
 *.jpeg
 *.png
-!*/texture/*.jpg
-!*/texture/*.jpeg
+!data/bunny/texture/*.jpg
+!data/bunny/texture/*.jpeg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
