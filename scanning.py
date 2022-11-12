@@ -32,7 +32,7 @@ class Scanner:
         """
 
         # good video to see how triangulation based range scanner works: https://www.micro-epsilon.de/2D_3D/laser-scanner/
-        print("Scanning")
+        print("\nScanning")
 
         origin = np.tile(self.model["scanner_pos"],(n_rays,1))
 
@@ -80,7 +80,7 @@ class Scanner:
 
         n_cam = self.model["mvs_pos"].shape[0]
 
-        print("Scanning MVS")
+        print("\nScanning MVS")
 
         self.mesh = trimesh.load(self.model["mesh"],use_embree=False,force="mesh")
         points = np.empty(shape=(0,3))
@@ -113,22 +113,22 @@ class Scanner:
 
     def setCamera(self,plt):
 
-        plt.camera.SetPosition(self.model["cam"]["pos"])
-        plt.camera.SetFocalPoint(self.model["cam"]["focalPoint"])
+        plt.camera.SetPosition(self.model["cam"]["position"])
+        plt.camera.SetFocalPoint(self.model["cam"]["focal_point"])
         plt.camera.SetViewUp(self.model["cam"]["viewup"])
         plt.camera.SetDistance(self.model["cam"]["distance"])
-        plt.camera.SetClippingRange(self.model["cam"]["clippingRange"])
+        plt.camera.SetClippingRange(self.model["cam"]["clipping_range"])
 
 
     def scanVisualizeMVS(self,interactive=False,size=(500,500),texture=True,duration=80):
-        print("visualize MVS Scanning")
+        print("\nvisualize MVS Scanning")
 
         mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
         if texture:
             mesh.texture(self.model["texture"])
             brightness = 1.5
         else:
-            mesh=mesh.computeNormals().phong()
+            mesh=mesh.compute_normals().phong()
             brightness = 2.5
 
         mesh.lighting("default")
@@ -154,13 +154,16 @@ class Scanner:
 
             plt = vedo.Plotter(axes=1, offscreen=np.invert(interactive))
             plt += mesh
-            plt += rays
-            plt += points
-            plt += sensors
+            plt += rays.lighting("ambient")
+            plt += points.lighting("ambient")
+            plt += sensors.lighting("ambient")
             # lp=vedo.Points(sensors.points()[0],c='g',r=15.0)
             # lp=vedo.Point((-0.3,-0.3,0.8),c='g',r=15.0)
+
             origin.apply_transform(R)
-            plt+= vedo.Light(origin, c='w', intensity=brightness)
+            lp=origin.points()[0]+[0,0,0.3]
+            lp=vedo.Point(lp,c='g',r=15.0)
+            plt+= vedo.Light(lp, c='w', intensity=brightness)
 
             self.setCamera(plt)
             plt.show(interactive=interactive, size=size,axes=0,roll=0,
@@ -175,15 +178,15 @@ class Scanner:
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
 
-    def scanVisualize(self,interactive=False,size=(500,500),texture=True,duration=80):
-        print("visualize Scanning")
+    def scanVisualize(self,interactive=False,size=(500,500),texture=True,duration=80,trail=[0,0]):
+        print("\nvisualize Scanning")
 
         mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
         if texture:
             mesh.texture(self.model["texture"])
             brightness = 1.5
         else:
-            mesh=mesh.computeNormals().phong()
+            mesh=mesh.compute_normals().phong()
             brightness = 2.5
 
         mesh.lighting("default")
@@ -209,18 +212,20 @@ class Scanner:
 
             plt = vedo.Plotter(axes=1, offscreen=np.invert(interactive))
             plt += mesh
-            plt += rays
-            plt += scanline
+            plt += rays.lighting("ambient")
+            plt += scanline.lighting("ambient")
 
-            ### uncomment to visualize last n=7 scanlines
-            # if(len(scanlines)>7):
-            #     # plt += scanlines
-            #     plt += scanlines[-3]
-            #     # plt += scanlines[-4]
-            #     plt += scanlines[-5]
-            #     plt += scanlines[-7]
+            if trail[0] > 0:
+                last_n = trail[0]
+                every = trail[1]
+                rr = np.arange(every,last_n+every,every)
+                ### uncomment to visualize last n=7 scanlines
+                if(len(scanlines)>last_n):
+                    for step in rr:
+                        plt += scanlines[-step].lighting("ambient")
 
-            plt += sensors
+
+            plt += sensors.lighting("ambient")
             light=sensors.points()[0]
             light+=[0,0,0.3]
             lp=vedo.Point(light,c='g',r=15.0)
@@ -242,7 +247,7 @@ class Scanner:
 
 
     def pointsVisualize(self,interactive=False,size=(500,500),with_mesh=False,duration=80):
-        print("visualize Points")
+        print("\nvisualize Points")
 
         points = np.empty(shape=(0,3))
         normals = np.empty(shape=(0,3))
@@ -269,7 +274,7 @@ class Scanner:
             # pc = vedo.Points(points,c=[113, 189, 247],r=6).lighting("default")
             pc = vedo.Points(points,c=[93, 169, 227],r=6).lighting("default")
             # [default, metallic, plastic, shiny, glossy, ambient, off]
-            pc.computeNormalsWithPCA()
+            pc.compute_normals_with_pca()
             pc.pointdata["Normals"]=normals
             pc.apply_transform(R)
 
@@ -290,7 +295,7 @@ class Scanner:
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
     def GIF(self,duration=0.1):
-        print("\nMake GIFs\n")
+        print("\nMake GIFs")
         images = []
         for img in sorted(os.listdir(os.path.join(self.model["path"], "img"))):
             images.append(imageio.imread(os.path.join(self.model["path"], "img", img)))
@@ -304,7 +309,7 @@ class Scanner:
     def GIF_PIL(self,duration=80):
         from PIL import Image, ImageOps
 
-        print("\nMake GIFs\n")
+        print("\nMake GIFs")
         images = []
         for img in sorted(os.listdir(os.path.join(self.model["path"], "img"))):
             im=Image.open(os.path.join(self.model["path"], "img", img))
@@ -324,7 +329,7 @@ class Scanner:
 
     def gtVisualize(self,interactive=False,size=(500,500),lw=0.0,texture=False,duration=80):
 
-        print("visualize Mesh")
+        print("\nvisualize Mesh")
 
         images = []
         name = "gt"
@@ -342,7 +347,7 @@ class Scanner:
             brightness = 1.0
         else:
             brightness = 2.5
-            # mesh=mesh.computeNormals().phong()
+            # mesh=mesh.compute_normals().phong()
 
         os.makedirs(os.path.join(self.model["path"], "gt"), exist_ok=True)
         for i in tqdm(range(self.steps)):
@@ -370,13 +375,13 @@ class Scanner:
 
     def meshVisualize(self,interactive=False,size=(500,500),lw=0.0,texture=False,duration=80):
 
-        print("visualize Mesh")
+        print("\nvisualize Mesh")
 
         images = []
         name = "mesh"
         sensor = self.model["scanner_pos"]
         mesh = vedo.Mesh(os.path.join(self.model["path"], "pointcloud_rt_5.0.ply"), c=[90, 90, 90])
-        mesh.computeNormals().phong()
+        mesh.compute_normals().phong()
 
         if lw > 0.0:
             mesh.lineWidth(lw=lw)
@@ -415,16 +420,17 @@ class Scanner:
 
     def pcVisualize(self,interactive=False,size=(500,500),with_mesh=False,type="range",duration=80):
 
-        print("visualize Pointcloud")
+        print("\nvisualize Pointcloud")
 
         images = []
         # sensor = np.array([-0.85,-0.85,0.80])
         sensor = self.model["scanner_pos"]
 
         if with_mesh:
-            mesht = vedo.Mesh(os.path.join(self.model["path"], self.model))
+            mesht = vedo.Mesh(self.model["mesh"])
             # mesh.texture(os.path.join(self.path, "0", "CH_NPC_MOB_Elephant_A01_MI_GRN_baseColor.png"))
-            mesht.texture(self.model["texture"])
+            if self.model["texture"]:
+                mesht.texture(self.model["texture"])
             mesht.lighting("default")
 
         if type == "mvs":
@@ -433,13 +439,11 @@ class Scanner:
             pc = vedo.load(os.path.join(self.model["path"], "pointcloud.ply"))
 
         pc = vedo.Points(pc, c=[93, 169, 227], r=6).lighting("default")
-        pc.computeNormalsWithPCA()
-
+        pc.compute_normals_with_pca()
         name = "pc_mesh" if with_mesh else "pc"
 
         os.makedirs(os.path.join(self.model["path"], name), exist_ok=True)
         for i in tqdm(range(self.steps)):
-            vedo.settings.useDepthPeeling = True
 
             R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
             if with_mesh:
@@ -469,22 +473,22 @@ class Scanner:
 
 if __name__ == "__main__":
 
-    size=(500,500)
+    size=(600,600)
     interactive=False
     # sc=Scanner(alpha=15)
     # sc=Scanner(alpha=60,n=100)
     sc=Scanner(model="bunny",steps=360)
 
     sc.scan(n_rays=100)
-    sc.scanVisualize(interactive=interactive,size=size,texture=True)
+    sc.scanVisualize(interactive=interactive,size=size,texture=True,trail=(20,5))
 
-    # sc.scanMVS(n_points=4000)
-    # sc.scanVisualizeMVS(interactive=interactive,texture=False)
+    # sc.scanMVS(n_points=3000)
+    # sc.scanVisualizeMVS(interactive=interactive,size=size,texture=False)
 
-    # sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
+    sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
     # sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
 
-    # sc.pcVisualize(interactive=False,size=size,with_mesh=True)
+    # sc.pcVisualize(interactive=False,size=size,with_mesh=True, type="mvs")
     # sc.pcVisualize(with_mesh=False,type="mvs")
 
     # sc.gtVisualize(interactive=interactive,size=size,lw=0.0,texture=False)
