@@ -120,16 +120,93 @@ class Scanner:
         plt.camera.SetClippingRange(self.model["cam"]["clipping_range"])
 
 
-    def scanVisualizeMVS(self,interactive=False,size=(500,500),texture=True,duration=80):
-        print("\nvisualize MVS Scanning")
+    def scanVisualize(self,interactive=False,size=(500,500),color=[90,90,90],texture=True,duration=80,trail=[0,0]):
+        print("\nvisualize Scanning")
 
-        mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
+        mesh = vedo.Mesh(self.model["mesh"], c=color)
         if texture:
             mesh.texture(self.model["texture"])
             brightness = 1.5
         else:
             mesh=mesh.compute_normals().phong()
-            brightness = 2.5
+            # brightness = 2.5
+            brightness = 1.5
+
+        mesh.lighting("default")
+
+        # sphere = vedo.Sphere(c=[255,165,0]).alpha(0.5)
+        circle = vedo.Circle(pos=[0,0,self.model["scanner_pos"][-1]],r=np.sqrt(self.model["scanner_pos"][0]**2+self.model["scanner_pos"][1]**2))
+        pA = circle.points()[np.array(sphere.edges())[:,0]]
+        pB = circle.points()[np.array(sphere.edges())[:,1]]
+        circle = vedo.shapes.Lines(pA,pB,c=[255,165,0],lw=4,res=24,alpha=0.6)
+
+
+        # [default, metallic, plastic, shiny, glossy, ambient, off]
+
+        os.makedirs(os.path.join(self.model["path"], "scn"), exist_ok=True)
+        scanlines=[]
+        images=[]
+        for i in tqdm(range(self.steps)):
+
+            R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
+            mesh.apply_transform(R)
+
+            scanline = vedo.Points(self.pointsArray[i],c=[255,255,0],r=10)
+            scanline.apply_transform(R)
+            scanlines.append(scanline)
+
+            sensors = vedo.Points(self.sensorsArray[i],c=[255,165,0],r=20)
+            sensors.apply_transform(R)
+
+            rays = vedo.shapes.Lines(scanline,sensors,c='y',lw=4,res=24,alpha=0.6)
+
+            plt = vedo.Plotter(axes=1, offscreen=np.invert(interactive))
+            plt += mesh
+            plt += rays.lighting("ambient")
+            plt += scanline.lighting("ambient")
+
+            if trail[0] > 0:
+                last_n = trail[0]
+                every = trail[1]
+                rr = np.arange(every,last_n+every,every)
+                ### uncomment to visualize last n=7 scanlines
+                if(len(scanlines)>last_n):
+                    for step in rr:
+                        plt += scanlines[-step].lighting("ambient")
+
+
+            plt += sensors.lighting("ambient")
+            light=sensors.points()[0]
+            light+=[0,0,0.3]
+            lp=vedo.Point(light,c='g',r=15.0)
+            # lp=vedo.Point((-0.3,-0.3,0.8),c='g',r=15.0)
+            plt+= vedo.Light(lp, c='w', intensity=brightness)
+
+            plt+=circle
+
+            self.setCamera(plt)
+            plt.show(interactive=interactive, size=size,axes=0,roll=0,
+                     azimuth=-i*self.factor,resetcam=False)
+
+            img="img{:03d}.png".format(i)
+            vedo.io.screenshot(os.path.join(self.model["path"], "scn", img))
+            plt.close()
+            images.append(Image.open(os.path.join(self.model["path"], "scn", img)))
+
+        images[0].save(os.path.join(self.model["path"], "scan.gif"),
+                       save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
+
+    def scanVisualizeMVS(self,interactive=False,size=(500,500),color=[90,90,90],texture=True,duration=80):
+        print("\nvisualize MVS Scanning")
+
+        mesh = vedo.Mesh(self.model["mesh"], c=color)
+        if texture:
+            mesh.texture(self.model["texture"])
+            brightness = 1.5
+        else:
+            mesh=mesh.compute_normals().phong()
+            # brightness = 2.5
+            brightness = 1.5
 
         mesh.lighting("default")
 
@@ -178,71 +255,7 @@ class Scanner:
                        save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
 
-    def scanVisualize(self,interactive=False,size=(500,500),texture=True,duration=80,trail=[0,0]):
-        print("\nvisualize Scanning")
 
-        mesh = vedo.Mesh(self.model["mesh"], c=[90, 90, 90])
-        if texture:
-            mesh.texture(self.model["texture"])
-            brightness = 1.5
-        else:
-            mesh=mesh.compute_normals().phong()
-            brightness = 2.5
-
-        mesh.lighting("default")
-
-        # [default, metallic, plastic, shiny, glossy, ambient, off]
-
-        os.makedirs(os.path.join(self.model["path"], "scn"), exist_ok=True)
-        scanlines=[]
-        images=[]
-        for i in tqdm(range(self.steps)):
-
-            R = trimesh.transformations.rotation_matrix(self.factor*math.pi/180, [0, 0, 1])
-            mesh.apply_transform(R)
-
-            scanline = vedo.Points(self.pointsArray[i],c=[255,255,0],r=10)
-            scanline.apply_transform(R)
-            scanlines.append(scanline)
-
-            sensors = vedo.Points(self.sensorsArray[i],c=[255,165,0],r=20)
-            sensors.apply_transform(R)
-
-            rays = vedo.shapes.Lines(scanline,sensors,c='y',lw=4,res=24,alpha=0.6)
-
-            plt = vedo.Plotter(axes=1, offscreen=np.invert(interactive))
-            plt += mesh
-            plt += rays.lighting("ambient")
-            plt += scanline.lighting("ambient")
-
-            if trail[0] > 0:
-                last_n = trail[0]
-                every = trail[1]
-                rr = np.arange(every,last_n+every,every)
-                ### uncomment to visualize last n=7 scanlines
-                if(len(scanlines)>last_n):
-                    for step in rr:
-                        plt += scanlines[-step].lighting("ambient")
-
-
-            plt += sensors.lighting("ambient")
-            light=sensors.points()[0]
-            light+=[0,0,0.3]
-            lp=vedo.Point(light,c='g',r=15.0)
-            # lp=vedo.Point((-0.3,-0.3,0.8),c='g',r=15.0)
-            plt+= vedo.Light(lp, c='w', intensity=brightness)
-
-            self.setCamera(plt)
-            plt.show(interactive=interactive, size=size,axes=0,roll=0,
-                     azimuth=-i*self.factor,resetcam=False)
-
-            img="img{:03d}.png".format(i)
-            vedo.io.screenshot(os.path.join(self.model["path"], "scn", img))
-            plt.close()
-            images.append(Image.open(os.path.join(self.model["path"], "scn", img)))
-
-        images[0].save(os.path.join(self.model["path"], "scan.gif"),
-                       save_all=True, append_images=images[1:], optimize=True, duration=duration, loop=0)
 
 
 
@@ -477,15 +490,16 @@ if __name__ == "__main__":
     interactive=False
     # sc=Scanner(alpha=15)
     # sc=Scanner(alpha=60,n=100)
-    sc=Scanner(model="bunny",steps=360)
+    sc=Scanner(model="airplane",steps=360)
 
+    color = [137, 186, 217]
     sc.scan(n_rays=100)
-    sc.scanVisualize(interactive=interactive,size=size,texture=True,trail=(20,5))
+    sc.scanVisualize(interactive=interactive,size=size,texture=True,trail=(20,5),color=color)
 
-    # sc.scanMVS(n_points=3000)
-    # sc.scanVisualizeMVS(interactive=interactive,size=size,texture=False)
+    sc.scanMVS(n_points=3000)
+    sc.scanVisualizeMVS(interactive=interactive,size=size,texture=False,color=color)
 
-    sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
+    # sc.pointsVisualize(interactive=False,size=size,with_mesh=True)
     # sc.pointsVisualize(interactive=False,size=size,with_mesh=False)
 
     # sc.pcVisualize(interactive=False,size=size,with_mesh=True, type="mvs")
